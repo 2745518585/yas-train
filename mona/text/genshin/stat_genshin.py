@@ -233,13 +233,16 @@ class GenshinSubStatGenerator(TextGenerator):
         value_str = format_value(key, value)
         chs = stat_info[key]["chs"]
 
-        return chs + "+" + value_str
+        if random.randint(0, 9) == 0:
+            return chs + "+" + value_str + "（待激活）"
+        else:
+            return chs + "+" + value_str
 
     def get_lexicon(self):
         ret = set()
         for k in stat_info:
             for char in stat_info[k]["chs"]:
                 ret.add(char)
-        for char in " '0123456789.+%,/":
+        for char in " '0123456789.+%,/（待激活）":
             ret.add(char)
         return ret
