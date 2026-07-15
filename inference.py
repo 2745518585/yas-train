@@ -4,56 +4,44 @@ import torchvision.transforms as T
 
 from PIL import Image
 
-from mona.nn.model import Model
-from mona.text import word_to_index
-from mona.datagen.datagen import generate_image
+from mona.nn.model2 import Model2
+from mona.text import get_lexicon
+from mona.nn import predict as predict_net
 from mona.datagen.pre_process import pre_process
+from mona.config import config
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+lexicon = get_lexicon(config["model_type"])
 
-net = Model(len(word_to_index))
+net = Model2(lexicon.lexicon_size(), in_channels=1).to(device)
 
-name = "model_training.pt"
-net.load_state_dict(torch.load(f"models/{name}"))
+name = "model_acc100-epoch197.pt"
+net.load_state_dict(torch.load(f"models/{name}", map_location=device, weights_only=True))
 net.eval()
 
 
-def predict(image_name):
+def predict_image(image_name):
     im = Image.open(f"data/test/{image_name}")
     im = pre_process(im)
     im.save("test.png")
 
     tensor = T.ToTensor()(im)
     tensor.unsqueeze_(0)
-    pred = net.predict(tensor)
-    return pred[0]
+    tensor = tensor.to(device)
+
+    with torch.no_grad():
+        result = predict_net(net, tensor, lexicon)
+    return result[0]
 
 
 names = [
-    "1.jpg", "2.png", "3.png", "4.png", "5.png",
-    "6.png", "7.png", "8.png", "9.png", "10.png",
-    "11.png", "12.png", "13.png", "14.jpg", "15.png",
-    "16.jpg", "17.png", "18.png", "19.png", "20.png",
-    "21.png", "22.png", "23.png", "24.png", "25.png",
-    "sample_0.png",
+    "test1.png",
+    "test2.png",
+    "test3.png",
+    "test4.png",
+    "test5.png",
 ]
-# names = ["25.png"]
 
 for name in names:
-    result = predict(name)
+    result = predict_image(name)
     print(f"{name}: {result}")
-
-# wrong = 0
-# wrong_list = []
-# for i in range(64):
-#     image, label = generate_image()
-#     image = T.ToTensor()(image)
-#     image.unsqueeze_(dim=0)
-#     pred = net.predict(image)
-#     if pred[0] != label:
-#         wrong += 1
-#         wrong_list.append((pred[0], label))
-#     print(pred[0], label)
-#
-# print("wrong:", wrong)
-# for pred, label in wrong_list:
-#     print(pred, label)
